@@ -39,3 +39,6 @@ This project is a user authentication system that includes signup, email verific
    ```bash
    git clone https://github.com/RaviRajGhorsai/Login-Verification-with-Django.git
    cd Login-Verification-with-Django
+   Scripts\activate
+   cd Project
+   python manage.py runserver
