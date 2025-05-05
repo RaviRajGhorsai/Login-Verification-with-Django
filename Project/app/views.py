@@ -6,6 +6,8 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import smtplib, ssl
 import requests
+import random
+import json
 # Create your views here.
 
 User = get_user_model()
@@ -85,19 +87,69 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            login(request, user)
+            
+            otp = random.randint(100000, 999999)
+            request.session['otp'] = otp
+            request.session['user_id'] = user.id
+            request.session['username'] = username
+            request.session.set_expiry(300)  # Set session expiry to 5 minutes
+            
+            port = 465
+            smtp_server = "smtp.gmail.com"
+            sender_email = "testappdjango37@gmail.com"
+            receiver_email = user.email
+            password_email = "thki rglo oqgr koee"
+            message = f"Subject: Login OTP\n\nYour 6-digit OTP is {otp}. Do not share it.\n\nOTP expires in 5 minutes."
+
+            context = ssl.create_default_context()
+            try:
+                with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+                    server.login(sender_email, password_email)
+                    server.sendmail(sender_email, receiver_email, message)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the dashboard or any other page after successful login
-            print("User is authenticated")
-            return redirect('dashboard')
+            return redirect('otp_verify')  # Redirect to the OTP verification page
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
         
     return render(request, 'login.html')
 
+def otp_verify(request):
+    if request.method == 'POST':
+        # Handle the OTP verification logic here
+        entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
+        print(entered_otp)
+        actual_otp = request.session.get('otp')
+        user_id = request.session.get('user_id')
+        print(actual_otp)
+        if not actual_otp or not user_id:
+            return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
+        
+        # data = json.loads(request.body)
+        # entered_otp = data.get('otp')
+        # print(entered_otp)
+        
+        if entered_otp == str(actual_otp):
+            print("verified")
+            user = User.objects.get(id=user_id)
+            login(request, user)
+            # Clear the OTP from the session after successful verification
+            request.session.pop('otp', None)
+            request.session.pop('user_id', None)
+            return redirect('dashboard')
+        else:
+            print("invalid OTP")
+            return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
+    return render(request, 'otp.html')
+
 def dashboard(request):
     if request.user.is_authenticated == True:
        print("hello from dashboard")
+       request.session.pop('username', None)
+       
     else:
         print("User is not authenticated")
 
