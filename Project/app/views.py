@@ -1,13 +1,16 @@
 from django.shortcuts import render, redirect
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from django.contrib.auth import get_user_model, authenticate, logout, login
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 import smtplib, ssl
 import requests
-import random
-import json
+import secrets
+from datetime import datetime, timedelta
+import hashlib
+# from SendEmail import email_send
+
 # Create your views here.
 
 User = get_user_model()
@@ -55,7 +58,8 @@ def signup(request):
                     print("Email is valid")
 
                     user = User.objects.create_user(username=username, password=password1, email=email)
-                
+                    
+                    
                     port = 465  # For SSL
                     smtp_server = "smtp.gmail.com"
                     sender_email = "testappdjango37@gmail.com"
@@ -63,7 +67,7 @@ def signup(request):
                     password = "thki rglo oqgr koee "
                     message = f"Welcome {username}, you have successfully signed up!"
                     create_context = ssl.create_default_context()
-                    
+
                     with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
                         server.login(sender_email, password)
                         server.sendmail(sender_email, receiver_email, message)
@@ -88,24 +92,24 @@ def login_view(request):
         
         if user is not None:
             
-            otp = random.randint(100000, 999999)
-            request.session['otp'] = otp
+            otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
+            request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
             request.session['user_id'] = user.id
-            request.session['username'] = username
-            request.session.set_expiry(300)  # Set session expiry to 5 minutes
+            request.session['otp-created-at'] = datetime.now().isoformat()
             
-            port = 465
-            smtp_server = "smtp.gmail.com"
-            sender_email = "testappdjango37@gmail.com"
-            receiver_email = user.email
-            password_email = "thki rglo oqgr koee"
-            message = f"Subject: Login OTP\n\nYour 6-digit OTP is {otp}. Do not share it.\n\nOTP expires in 5 minutes."
-
-            context = ssl.create_default_context()
             try:
-                with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-                    server.login(sender_email, password_email)
+                port = 465  # For SSL
+                smtp_server = "smtp.gmail.com"
+                sender_email = "testappdjango37@gmail.com"
+                receiver_email = user.email
+                password = "thki rglo oqgr koee "
+                message = f"Subject: Login OTP\n\nYour 6-digit OTP is {otp}. Do not share it.\n\nOTP expires in 5 minutes."
+                create_context = ssl.create_default_context()
+
+                with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
+                    server.login(sender_email, password)
                     server.sendmail(sender_email, receiver_email, message)
+            
             except Exception as e:
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})
@@ -121,35 +125,37 @@ def otp_verify(request):
     if request.method == 'POST':
         # Handle the OTP verification logic here
         entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
-        print(entered_otp)
+        
         actual_otp = request.session.get('otp')
+        entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
         user_id = request.session.get('user_id')
-        print(actual_otp)
+        
         if not actual_otp or not user_id:
             return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
         
-        # data = json.loads(request.body)
-        # entered_otp = data.get('otp')
-        # print(entered_otp)
-        
-        if entered_otp == str(actual_otp):
-            print("verified")
-            user = User.objects.get(id=user_id)
-            login(request, user)
-            # Clear the OTP from the session after successful verification
-            request.session.pop('otp', None)
-            request.session.pop('user_id', None)
-            return redirect('dashboard')
+        # Check if the OTP is expired
+        otp_time = datetime.fromisoformat(request.session.get('otp-created-at'))
+        if entered_otp_hash == str(actual_otp):
+            if datetime.now() - otp_time > timedelta(minutes=5):
+                
+                return render(request, 'otp.html', {'error': 'OTP expired. Please request a new one.'})
+            else:
+                
+                user = User.objects.get(id=user_id)
+                login(request, user)
+                # Clear the OTP from the session after successful verification
+                request.session.pop('otp', None)
+                request.session.pop('user_id', None)
+                request.session.pop('otp-created-at', None)
+                return redirect('dashboard')
         else:
-            print("invalid OTP")
+            
             return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
     return render(request, 'otp.html')
 
 def dashboard(request):
     if request.user.is_authenticated == True:
        print("hello from dashboard")
-       request.session.pop('username', None)
-       
     else:
         print("User is not authenticated")
 
