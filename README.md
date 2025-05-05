@@ -52,4 +52,4 @@ This project is a user authentication system that includes signup, email verific
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
         }
-      }```
+      }
