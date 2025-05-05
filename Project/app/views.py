@@ -40,40 +40,39 @@ def signup(request):
             return HttpResponse("Email already exists!")
         
         # Zeruh email verification API
-        # api_key = "268eb7defd4c6f3ab1383296fffd3122ad31ada8719aa275ab8a2f337e2868d7"
-        # url = f"https://api.zeruh.com/v1/verify?api_key={api_key}&email_address={email}"
+        api_key = "268eb7defd4c6f3ab1383296fffd3122ad31ada8719aa275ab8a2f337e2868d7"
+        url = f"https://api.zeruh.com/v1/verify?api_key={api_key}&email_address={email}"
         
-        # try:
-        #     response = requests.get(url)
-        #     data = response.json()
+        try:
+            response = requests.get(url)
+            data = response.json()
             
-        #     if response.status_code == 200 and data.get('status') == 'success':
-        #         verification_result = data.get('data', {}).get('result', 'unknown')
-        #         if verification_result == 'valid':
-        #                 try:
-        user = User.objects.create_user(username=username, password=password1, email=email)
-    
-        port = 465  # For SSL
-        smtp_server = "smtp.gmail.com"
-        sender_email = "testappdjango37@gmail.com"
-        receiver_email = email
-        password = "thki rglo oqgr koee "
-        message = f"Wlecome {username}, you have successfully signed up!"
-        create_context = ssl.create_default_context()
-        
-        with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
-            server.login(sender_email, password)
-            server.sendmail(sender_email, receiver_email, message)
-        return redirect('login')  # Redirect to the login page after signup
-        #                 except Exception as e:
-        #                     print(f"Error sending email: {e}")
-        #                     return render(request, 'signup.html', {'error': 'sigmup or email error'})
-        #         else:
-        #             print("Email verification failed")
-        #             return render(request, 'signup.html', {'error': 'Email verification failed'})
-        # except Exception as e:
-        #     print(f"Error verifying email: {e}")
-        #     return render(request, 'signup.html', {'error': e})
+            if response.status_code == 200 and data.get('success') == True:
+                verification_result = data.get('result', {})
+                if verification_result.get('status') == 'deliverable':
+                    print("Email is valid")
+
+                    user = User.objects.create_user(username=username, password=password1, email=email)
+                
+                    port = 465  # For SSL
+                    smtp_server = "smtp.gmail.com"
+                    sender_email = "testappdjango37@gmail.com"
+                    receiver_email = email
+                    password = "thki rglo oqgr koee "
+                    message = f"Welcome {username}, you have successfully signed up!"
+                    create_context = ssl.create_default_context()
+                    
+                    with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
+                        server.login(sender_email, password)
+                        server.sendmail(sender_email, receiver_email, message)
+                    return redirect('login')  # Redirect to the login page after signup
+                else:
+                    print("Email is not deliverable")
+                    return render(request, 'signup.html', {'error': 'Email does not exist'})
+                    
+        except Exception as e:
+            print(f"Error verifying email: {e}")
+            return render(request, 'signup.html', {'error': e})
                     
     return render(request, 'signup.html')
 
