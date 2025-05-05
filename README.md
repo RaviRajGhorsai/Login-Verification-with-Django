@@ -48,8 +48,8 @@ This project is a user authentication system that includes signup, email verific
     - Make sure the DATABASES configuration is set as:
       ```bash
       DATABASES = {
-    'default': {
+      'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
         }
-      }
+      }```
