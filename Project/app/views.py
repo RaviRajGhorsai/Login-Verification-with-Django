@@ -9,7 +9,7 @@ import requests
 import secrets
 from datetime import datetime, timedelta
 import hashlib
-# from SendEmail import email_send
+from utils import send_register_mail, send_otp_mail
 
 # Create your views here.
 
@@ -59,18 +59,7 @@ def signup(request):
 
                     user = User.objects.create_user(username=username, password=password1, email=email)
                     
-                    
-                    port = 465  # For SSL
-                    smtp_server = "smtp.gmail.com"
-                    sender_email = "testappdjango37@gmail.com"
-                    receiver_email = email
-                    password = "thki rglo oqgr koee "
-                    message = f"Welcome {username}, you have successfully signed up!"
-                    create_context = ssl.create_default_context()
-
-                    with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
-                        server.login(sender_email, password)
-                        server.sendmail(sender_email, receiver_email, message)
+                    send_register_mail(email, username)
                     return redirect('login')  # Redirect to the login page after signup
                 else:
                     print("Email is not deliverable")
@@ -98,18 +87,7 @@ def login_view(request):
             request.session['otp-created-at'] = datetime.now().isoformat()
             
             try:
-                port = 465  # For SSL
-                smtp_server = "smtp.gmail.com"
-                sender_email = "testappdjango37@gmail.com"
-                receiver_email = user.email
-                password = "thki rglo oqgr koee "
-                message = f"Subject: Login OTP\n\nYour 6-digit OTP is {otp}. Do not share it.\n\nOTP expires in 5 minutes."
-                create_context = ssl.create_default_context()
-
-                with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
-                    server.login(sender_email, password)
-                    server.sendmail(sender_email, receiver_email, message)
-            
+                send_otp_mail(user.email, otp)
             except Exception as e:
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})

@@ -1,0 +1,30 @@
+import smtplib, ssl
+
+def send_register_mail(receiver_mail, username):
+    
+    port = 465  # For SSL
+    smtp_server = "smtp.gmail.com"
+    sender_email = "testappdjango37@gmail.com"
+    receiver_email = receiver_mail
+    password = "thki rglo oqgr koee "
+    message = f"Welcome {username},\n\nThank you for registering with us. We are excited to have you on board!\n\nBest regards!"
+    create_context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message)
+    
+        
+
+def send_otp_mail(receiver_mail, otp):
+    port = 465  # For SSL
+    smtp_server = "smtp.gmail.com"
+    sender_email = "testappdjango37@gmail.com"
+    receiver_email = receiver_mail
+    password = "thki rglo oqgr koee "
+    message = f"Your OTP is {otp}.\n\nPlease use this OTP to complete your registration.\n\OTP expires in 5 minutes.\n\n Please do not share this OTP with anyone."
+    create_context = ssl.create_default_context()
+
+    with smtplib.SMTP_SSL(smtp_server, port, context=create_context) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, message)
