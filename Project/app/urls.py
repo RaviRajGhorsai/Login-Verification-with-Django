@@ -6,5 +6,7 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('logout/', views.logout_view, name='logout'),
-    path('verify_otp/', views.otp_verify, name='otp_verify'),
+    path('create-group/', views.create_group_view, name='create_group'),
+    path('join-group/', views.join_group_view, name='join_group'),
+    path('chat/', views.chat_view, name='chat'),
 ]

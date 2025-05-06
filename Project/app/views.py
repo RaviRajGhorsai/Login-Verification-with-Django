@@ -4,7 +4,6 @@ from django.contrib.auth import get_user_model, authenticate, logout, login
 from django.views.decorators.csrf import csrf_exempt
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-import smtplib, ssl
 import requests
 import secrets
 from datetime import datetime, timedelta
@@ -92,7 +91,7 @@ def login_view(request):
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the dashboard or any other page after successful login
-            return redirect('otp_verify')  # Redirect to the OTP verification page
+            return redirect('dashboard')  # Redirect to the OTP verification page
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
@@ -137,7 +136,16 @@ def dashboard(request):
     else:
         print("User is not authenticated")
 
-    return render(request, 'dashboard.html')
+    return render(request, 'chat/home.html')
+
+def create_group_view(request):
+    return render(request, 'chat/create_group.html')
+
+def join_group_view(request):
+    return render(request, 'chat/join_group.html')
+
+def chat_view(request):
+    return render(request, 'chat/chat.html')
 
 def logout_view(request):
     if request.user.is_authenticated:

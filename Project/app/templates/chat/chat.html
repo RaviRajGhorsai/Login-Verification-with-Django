@@ -1,0 +1,45 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat Box</title>
+  <link rel="stylesheet" href="{% static 'chat.css' %}" />
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">Chat Box</div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input">
+      <input type="text" id="chatInput" placeholder="Type a message..." />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+
+    function sendMessage() {
+      const message = chatInput.value.trim();
+      if (message === '') return;
+
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message');
+      messageDiv.textContent = message;
+      chatMessages.appendChild(messageDiv);
+
+      chatInput.value = '';
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    chatInput.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') {
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+</html>

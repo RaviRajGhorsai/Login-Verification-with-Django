@@ -1,0 +1,28 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Welcome to Chat System</title>
+  <link rel="stylesheet" href="{% static 'chat_home.css' %}" />
+</head>
+<body>
+  <div class="welcome-container">
+    <h1>Welcome to Chat System</h1>
+    <form method = "POST" action = "{% url 'create_group' %}">
+      {% csrf_token %}
+      <button class="btn" >Create Group</button>
+    </form>
+
+    <form method = "POST" action = "{% url 'join_group' %}">
+      {% csrf_token %}
+      <button class="btn" >Join Group</button>
+    </form>
+    
+    <a class="btn" href="{% url 'chat' %}">Chat</a>
+    <a class="btn" href="{% url 'logout' %}">Logout</a>
+  </div>
+</body>
+</html>
