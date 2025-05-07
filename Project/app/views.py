@@ -2,14 +2,16 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.contrib.auth import get_user_model, authenticate, logout, login
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+from django.contrib import messages
 import requests
 import secrets
 from datetime import datetime, timedelta
 import hashlib
 from utils import send_register_mail, send_otp_mail
-
+from .models import Group
 # Create your views here.
 
 User = get_user_model()
@@ -91,7 +93,7 @@ def login_view(request):
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the dashboard or any other page after successful login
-            return redirect('dashboard')  # Redirect to the OTP verification page
+            return redirect('otp_verify')  # Redirect to the OTP verification page
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
@@ -130,6 +132,7 @@ def otp_verify(request):
             return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
     return render(request, 'otp.html')
 
+@login_required
 def dashboard(request):
     if request.user.is_authenticated == True:
        print("hello from dashboard")
@@ -138,13 +141,71 @@ def dashboard(request):
 
     return render(request, 'chat/home.html')
 
+@login_required
 def create_group_view(request):
+    if request.user.is_authenticated == True:
+        if request.method == 'POST':
+            # Handle the group creation logic here
+            group_name = request.POST.get('group_name', '').strip()
+            group_key = request.POST.get('group_key', '').strip()
+            
+            if not group_name or not group_key:
+                print("All fields are required")
+                return render(request, 'chat/create_group.html', {'error': 'All fields are required'})
+            
+            if Group.objects.filter(name=group_name).exists():
+                print("Group name already exists")
+                return render(request, 'chat/create_group.html', {'error': 'Group name already exists'})
+            
+            group = Group.objects.create(name=group_name, key=group_key)
+            group.members.add(request.user)
+            group.save()
+            if group:
+                return redirect('chat')
+            else:
+                print("Failed to create group")
+                return render(request, 'chat/create_group.html', {'error': 'Failed to create group'})
+            
     return render(request, 'chat/create_group.html')
 
+@login_required
 def join_group_view(request):
+    if request.user.is_authenticated == True:
+        if request.method == 'POST':
+            # Handle the group joining logic here
+            group_key = request.POST.get('groupKey', '').strip()
+            group_name = request.POST.get('groupName', '').strip()
+            
+            if not group_key or not group_name:
+                print("Group key is required")
+                return render(request, 'chat/join_group.html', {'error': 'Group name and key is required'})
+    
+            try:
+                group = Group.objects.get(name= group_name, key=group_key)
+            except Group.DoesNotExist:
+                print("Group does not exist")
+                return render(request, 'chat/join_group.html', {'error': 'Group does not exist'})
+            
+            if request.user not in group.members.all():
+                group.members.add(request.user)
+                group.save()
+                messages.success(request, f"You have successfully joined the group {group.name}.")
+                print(f"You have successfully joined the group {group.name}.")
+                return redirect('chat')
+            else:
+                print("You are already a member of this group")
+                
+                
+                return redirect('chat')
     return render(request, 'chat/join_group.html')
 
+@login_required
 def chat_view(request):
+    if request.user.is_authenticated == True:
+        groups = Group.objects.filter(members=request.user)
+        
+        
+        return render(request, 'chat/chat.html', {'group_names': groups})
     return render(request, 'chat/chat.html')
 
 def logout_view(request):

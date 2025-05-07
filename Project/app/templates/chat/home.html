@@ -11,15 +11,9 @@
 <body>
   <div class="welcome-container">
     <h1>Welcome to Chat System</h1>
-    <form method = "POST" action = "{% url 'create_group' %}">
-      {% csrf_token %}
-      <button class="btn" >Create Group</button>
-    </form>
-
-    <form method = "POST" action = "{% url 'join_group' %}">
-      {% csrf_token %}
-      <button class="btn" >Join Group</button>
-    </form>
+    
+      <a class="btn" href="{% url 'create_group' %}" >Create Group</a>
+      <a class="btn" href="{% url 'join_group' %}" >Join Group</a>
     
     <a class="btn" href="{% url 'chat' %}">Chat</a>
     <a class="btn" href="{% url 'logout' %}">Logout</a>

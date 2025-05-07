@@ -11,7 +11,7 @@
 <body>
   <div class="form-container">
     <h2>Join a Group</h2>
-    <form id="joinGroupForm" method="POST" action="{% url 'dashboard' %}">
+    <form id="joinGroupForm" method="POST" action="{% url 'join_group' %}">
       {% csrf_token %}
       <label for="groupName">Group Name</label>
       <input type="text" id="groupName" name="groupName" required />

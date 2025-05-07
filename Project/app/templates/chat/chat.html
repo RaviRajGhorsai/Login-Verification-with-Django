@@ -9,14 +9,33 @@
   <link rel="stylesheet" href="{% static 'chat.css' %}" />
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">Chat Box</div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <div class="chat-input">
-      <input type="text" id="chatInput" placeholder="Type a message..." />
-      <button onclick="sendMessage()">Send</button>
+  <div class="chat-header-bar">
+    <h1>Welcome to the Chat Room</h1>
+    <div class="chat-header-buttons">
+      <a href="{% url 'dashboard' %}" class="btn">Back to Home</a>
+      <a href="{% url 'logout' %}" class="btn logout">Logout</a>
     </div>
   </div>
+  <div class="main--container">
+    <div class="chat-container">
+      <div class="chat-header">{{ chat_name }}</div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input">
+        <input type="text" id="chatInput" placeholder="Type a message..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <h2>Groups</h2>
+      <ul id="groupMembers">
+        {% for group in group_names %}
+          <li onclick="selectGroup()">{{ group }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
 
   <script>
     const chatMessages = document.getElementById('chatMessages');
@@ -40,6 +59,12 @@
         sendMessage();
       }
     });
+
+    function selectGroup() {
+  
+    document.querySelector('.chat-container').style.display = 'flex';
+  }
+
   </script>
 </body>
 </html>

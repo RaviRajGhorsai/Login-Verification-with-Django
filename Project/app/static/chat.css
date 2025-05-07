@@ -1,76 +1,178 @@
+/* Base Styles */
 * {
-    box-sizing: border-box;
-  }
+  box-sizing: border-box;
+}
 
-  body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f0f2f5;
+  padding-top: 80px; /* space for fixed header */
+  display: flex;
+  justify-content: center;
+}
 
-  .chat-container {
-    background: white;
-    width: 400px;
-    max-width: 90%;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
+/* Header Banner */
+.chat-header-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background-color: #4a90e2;
+  color: white;
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
-  .chat-header {
-    background-color: #4a90e2;
-    color: white;
-    padding: 15px;
-    font-weight: bold;
-    text-align: center;
-  }
+.chat-header-bar h1 {
+  margin: 0;
+  font-size: 22px;
+}
 
-  .chat-messages {
-    flex: 1;
-    padding: 15px;
-    overflow-y: auto;
-    border-top: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-  }
+.chat-header-buttons {
+  display: flex;
+  gap: 10px;
+}
 
-  .message {
-    margin-bottom: 10px;
-    padding: 10px;
-    background: #e1f5fe;
-    border-radius: 5px;
-    max-width: 80%;
-  }
+.btn {
+  padding: 8px 15px;
+  background-color: #ffffff;
+  color: #4a90e2;
+  text-decoration: none;
+  font-weight: bold;
+  border-radius: 6px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
 
-  .chat-input {
-    display: flex;
-    padding: 10px;
-  }
+.btn:hover {
+  background-color: #e0ecff;
+}
 
-  .chat-input input {
-    flex: 1;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-  }
+.btn.logout {
+  background-color: #ff4d4d;
+  color: white;
+}
 
-  .chat-input button {
-    margin-left: 10px;
-    padding: 10px 15px;
-    font-size: 16px;
-    background-color: #4a90e2;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-  }
+.btn.logout:hover {
+  background-color: #e63b3b;
+}
 
-  .chat-input button:hover {
-    background-color: #357abd;
-  }
+/* Main Container */
+.main--container {
+  display: flex;
+  gap: 20px;
+  max-width: 1200px;
+  width: 100%;
+  padding: 0 20px;
+}
+
+/* Chat Box */
+.chat-container {
+  background: white;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-header {
+  background-color: #4a90e2;
+  color: white;
+  padding: 15px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  height: 300px;
+}
+
+.message {
+  margin-bottom: 10px;
+  padding: 10px;
+  background: #e1f5fe;
+  border-radius: 5px;
+  max-width: 80%;
+}
+
+/* Chat Input */
+.chat-input {
+  display: flex;
+  padding: 10px;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.chat-input button {
+  margin-left: 10px;
+  padding: 10px 15px;
+  font-size: 16px;
+  background-color: #4a90e2;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.chat-input button:hover {
+  background-color: #357abd;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: #f5f7fa;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  overflow-y: auto;
+  height: fit-content;
+}
+
+.sidebar h2 {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ccc;
+  padding-bottom: 5px;
+}
+
+#groupMembers {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#groupMembers li {
+  padding: 10px;
+  margin-bottom: 8px;
+  background-color: #fff;
+  border-radius: 8px;
+  color: #444;
+  font-size: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s ease;
+}
+
+#groupMembers li:hover {
+  background-color: #e0f0ff;
+  cursor: pointer;
+}
