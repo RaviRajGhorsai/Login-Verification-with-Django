@@ -85,55 +85,55 @@ def login_view(request):
         
         if user is not None:
             login(request, user)
-            # otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
-            # request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
-            # request.session['user_id'] = user.id
-            # request.session['otp-created-at'] = datetime.now().isoformat()
+            otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
+            request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
+            request.session['user_id'] = user.id
+            request.session['otp-created-at'] = datetime.now().isoformat()
             
-            # try:
-            #     send_otp_mail(user.email, otp)
-            # except Exception as e:
-            #     print(f"Error sending email: {e}")
-            #     return render(request, 'login.html', {'error': 'Failed to send OTP email'})
+            try:
+                send_otp_mail(user.email, otp)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the dashboard or any other page after successful login
-            return redirect('dashboard')  # Redirect to the OTP verification page
+            return redirect('otp_verify')  # Redirect to the OTP verification page
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
         
     return render(request, 'login.html')
 
-# def otp_verify(request):
-#     if request.method == 'POST':
-#         # Handle the OTP verification logic here
-#         entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
+def otp_verify(request):
+    if request.method == 'POST':
+        # Handle the OTP verification logic here
+        entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
         
-#         actual_otp = request.session.get('otp')
-#         entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
-#         user_id = request.session.get('user_id')
+        actual_otp = request.session.get('otp')
+        entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
+        user_id = request.session.get('user_id')
         
-#         if not actual_otp or not user_id:
-#             return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
+        if not actual_otp or not user_id:
+            return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
         
-#         # Check if the OTP is expired
-#         otp_time = datetime.fromisoformat(request.session.get('otp-created-at'))
-#         if entered_otp_hash == str(actual_otp):
-#             if datetime.now() - otp_time > timedelta(minutes=5):
+        # Check if the OTP is expired
+        otp_time = datetime.fromisoformat(request.session.get('otp-created-at'))
+        if entered_otp_hash == str(actual_otp):
+            if datetime.now() - otp_time > timedelta(minutes=5):
                 
-#                 return render(request, 'otp.html', {'error': 'OTP expired. Please request a new one.'})
-#             else:
+                return render(request, 'otp.html', {'error': 'OTP expired. Please request a new one.'})
+            else:
                 
-#                 user = User.objects.get(id=user_id)
-#                 login(request, user)
-#                 # Clear the OTP from the session after successful verification
-#                 request.session.pop('otp', None)
-#                 request.session.pop('user_id', None)
-#                 request.session.pop('otp-created-at', None)
-#                 return redirect('dashboard')
-#         else:
+                user = User.objects.get(id=user_id)
+                login(request, user)
+                # Clear the OTP from the session after successful verification
+                request.session.pop('otp', None)
+                request.session.pop('user_id', None)
+                request.session.pop('otp-created-at', None)
+                return redirect('dashboard')
+        else:
             
-#             return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
-#     return render(request, 'otp.html')
+            return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
+    return render(request, 'otp.html')
 
 @login_required
 def dashboard(request):

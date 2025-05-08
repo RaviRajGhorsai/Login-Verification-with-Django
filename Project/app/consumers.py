@@ -2,6 +2,7 @@ from channels.generic.websocket import WebsocketConsumer
 from django.shortcuts import get_object_or_404
 from .models import Group, GroupMessage
 from django.template.loader import render_to_string
+from asgiref.sync import async_to_sync
 import json
 
 class ChatConsumer(WebsocketConsumer):
@@ -9,7 +10,21 @@ class ChatConsumer(WebsocketConsumer):
         self.user = self.scope['user']
         self.group_name = self.scope['url_route']['kwargs']['chat_room_name']
         self.chat_room = get_object_or_404(Group, name=self.group_name)
+        
+        # converts asynchronous function to synchronous, so that all user can 
+        # receive message at once in real time
+        
+        async_to_sync(self.channel_layer.group_add)(
+            self.group_name,
+            self.channel_name
+        )
+        
         self.accept()
+    
+    # disconnect method is called when the user disconnects from the websocket
+    def disconnect(self, close_code):
+        async_to_sync(self.channel_layer.group_discard)(
+            self.group_name, self.channel_name)
     
     def receive(self, text_data):
         
@@ -29,6 +44,23 @@ class ChatConsumer(WebsocketConsumer):
         except Exception as e:
             print(f"Error saving message: {e}")
             return
+        
+        event = {
+            'type': 'message_handler',
+            'message': message,
+            'user': self.user.username,
+            'group_name': self.group_name,
+            'message_id': group_message.id,
+        }
+        
+        # Send the event/message to the group
+        async_to_sync(self.channel_layer.group_send)(
+            self.group_name,event
+        )
+    
+    def message_handler(self, event):
+        message_id = event['message_id']
+        group_message = get_object_or_404(GroupMessage, id=message_id)
         context ={
             'message': group_message,
             'user': self.user,
