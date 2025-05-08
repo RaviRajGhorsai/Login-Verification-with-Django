@@ -1,0 +1,16 @@
+{% extends "chat/base.html" %}
+{% block title %}Profile{% endblock %}
+
+{% load static %}
+{% block profile %}
+<main class="flex-grow flex items-center justify-center">
+    <div class="text-center">
+      <img 
+        src="{% static 'images/IMG-20250118-WA0150.jpg' %}" 
+        alt="Profile Image" 
+        class="w-48 h-48 rounded-full object-cover border-4 border-blue-500 shadow-lg"
+      />
+    </div>
+  </main>
+
+ {% endblock %}

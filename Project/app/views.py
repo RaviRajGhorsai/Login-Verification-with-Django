@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth import get_user_model, authenticate, logout, login
 from django.views.decorators.csrf import csrf_exempt
@@ -11,7 +11,10 @@ import secrets
 from datetime import datetime, timedelta
 import hashlib
 from utils import send_register_mail, send_otp_mail
-from .models import Group
+from .models import Group, GroupMessage
+import json
+from django.http import JsonResponse
+from .forms import chatMessageForm
 # Create your views here.
 
 User = get_user_model()
@@ -81,56 +84,56 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
+            login(request, user)
+            # otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
+            # request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
+            # request.session['user_id'] = user.id
+            # request.session['otp-created-at'] = datetime.now().isoformat()
             
-            otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
-            request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
-            request.session['user_id'] = user.id
-            request.session['otp-created-at'] = datetime.now().isoformat()
-            
-            try:
-                send_otp_mail(user.email, otp)
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                return render(request, 'login.html', {'error': 'Failed to send OTP email'})
+            # try:
+            #     send_otp_mail(user.email, otp)
+            # except Exception as e:
+            #     print(f"Error sending email: {e}")
+            #     return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the dashboard or any other page after successful login
-            return redirect('otp_verify')  # Redirect to the OTP verification page
+            return redirect('dashboard')  # Redirect to the OTP verification page
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
         
     return render(request, 'login.html')
 
-def otp_verify(request):
-    if request.method == 'POST':
-        # Handle the OTP verification logic here
-        entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
+# def otp_verify(request):
+#     if request.method == 'POST':
+#         # Handle the OTP verification logic here
+#         entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
         
-        actual_otp = request.session.get('otp')
-        entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
-        user_id = request.session.get('user_id')
+#         actual_otp = request.session.get('otp')
+#         entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
+#         user_id = request.session.get('user_id')
         
-        if not actual_otp or not user_id:
-            return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
+#         if not actual_otp or not user_id:
+#             return render(request, 'otp.html', {'error': 'Session expired. Please login again.'})
         
-        # Check if the OTP is expired
-        otp_time = datetime.fromisoformat(request.session.get('otp-created-at'))
-        if entered_otp_hash == str(actual_otp):
-            if datetime.now() - otp_time > timedelta(minutes=5):
+#         # Check if the OTP is expired
+#         otp_time = datetime.fromisoformat(request.session.get('otp-created-at'))
+#         if entered_otp_hash == str(actual_otp):
+#             if datetime.now() - otp_time > timedelta(minutes=5):
                 
-                return render(request, 'otp.html', {'error': 'OTP expired. Please request a new one.'})
-            else:
+#                 return render(request, 'otp.html', {'error': 'OTP expired. Please request a new one.'})
+#             else:
                 
-                user = User.objects.get(id=user_id)
-                login(request, user)
-                # Clear the OTP from the session after successful verification
-                request.session.pop('otp', None)
-                request.session.pop('user_id', None)
-                request.session.pop('otp-created-at', None)
-                return redirect('dashboard')
-        else:
+#                 user = User.objects.get(id=user_id)
+#                 login(request, user)
+#                 # Clear the OTP from the session after successful verification
+#                 request.session.pop('otp', None)
+#                 request.session.pop('user_id', None)
+#                 request.session.pop('otp-created-at', None)
+#                 return redirect('dashboard')
+#         else:
             
-            return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
-    return render(request, 'otp.html')
+#             return render(request, 'otp.html', {'error': 'Invalid OTP. Please try again.'})
+#     return render(request, 'otp.html')
 
 @login_required
 def dashboard(request):
@@ -139,7 +142,10 @@ def dashboard(request):
     else:
         print("User is not authenticated")
 
-    return render(request, 'chat/home.html')
+    return render(request, 'chat/base.html')
+
+def profile_view(request):
+    return render(request, 'chat/profile.html')
 
 @login_required
 def create_group_view(request):
@@ -200,13 +206,32 @@ def join_group_view(request):
     return render(request, 'chat/join_group.html')
 
 @login_required
-def chat_view(request):
+def chat_view(request, chat_room_name="Public"):
     if request.user.is_authenticated == True:
-        groups = Group.objects.filter(members=request.user)
+        chat_group = get_object_or_404(Group, name=chat_room_name)
+        chat_messages = chat_group.messages.order_by('-created')[:30][::-1]
+        form = chatMessageForm()
         
+        if request.htmx:
+            form = chatMessageForm(request.POST)
+            if form.is_valid():
+                message = form.save(commit=False)
+                message.user = request.user
+                message.group = chat_group
+                message.save()
+                context = {
+                    'message': message,
+                    'user': request.user,
+                }
+                return render(request, 'chat/partials/chat_message_p.html', context)
         
-        return render(request, 'chat/chat.html', {'group_names': groups})
-    return render(request, 'chat/chat.html')
+        context = {
+            'chat_groups': chat_group,
+            'chat_messages': chat_messages,
+            'chat_room_name': chat_room_name,
+            'form': form,   
+        }
+    return render(request, 'chat/chat.html', context)
 
 def logout_view(request):
     if request.user.is_authenticated:

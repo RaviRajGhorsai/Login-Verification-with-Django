@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <!-- Banner / Navbar -->
+  <nav class="bg-white shadow-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+      <h1 class="text-2xl font-bold text-gray-800">Home</h1>
+      <div class="space-x-6">
+        <a href="{% url 'joinChat' %}" class="text-gray-600 hover:text-blue-600 font-medium">Join Chat</a>
+        <a href="{% url 'profile' %}" class="text-gray-600 hover:text-blue-600 font-medium">Profile</a>
+        <a href="{% url 'logout' %}" class="text-red-600 hover:text-red-800 font-medium">Logout</a>
+      </div>
+    </div>
+  </nav>
+  {% block profile%}
+  {% endblock %}
+
+  {% block chatbox%}
+  {% endblock %}
+
+  {% block script %}
+  {% endblock %}
+</body>
+</html>

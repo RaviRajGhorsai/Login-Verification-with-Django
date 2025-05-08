@@ -21,7 +21,7 @@ class Group(models.Model):
 class GroupMessage(models.Model):
     group = models.ForeignKey(Group, on_delete=models.CASCADE, related_name='messages')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
-    message = models.TextField()
+    message = models.CharField(max_length=300, blank=True, null=True)
     created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

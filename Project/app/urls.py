@@ -4,10 +4,11 @@ from . import views
 urlpatterns = [
     path('login/', views.login_view, name='login'),
     path('signup/', views.signup, name='signup'),
-    path('otp-verify/', views.otp_verify, name='otp_verify'),
+    # path('otp-verify/', views.otp_verify, name='otp_verify'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('logout/', views.logout_view, name='logout'),
     path('create-group/', views.create_group_view, name='create_group'),
     path('join-group/', views.join_group_view, name='join_group'),
-    path('chat/', views.chat_view, name='chat'),
+    path('chat/', views.chat_view, name='joinChat'),
+    path('profile/', views.profile_view, name='profile'),
 ]
