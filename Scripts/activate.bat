@@ -9,6 +9,7 @@ if defined _OLD_CODEPAGE (
 )
 
 set VIRTUAL_ENV=d:\Github\Signup_Login_Confirmation\.venv
+set DJANGO_SETTINGS_MODULE=Project.settings
 
 if not defined PROMPT set PROMPT=$P$G
 

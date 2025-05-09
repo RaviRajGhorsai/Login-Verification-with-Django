@@ -10,19 +10,18 @@ import requests
 import secrets
 from datetime import datetime, timedelta
 import hashlib
-from utils import send_register_mail, send_otp_mail
+from utils import send_register_mail, send_otp_mail, verify_mail
 from .models import Group, GroupMessage
-import json
-from django.http import JsonResponse
+
 from .forms import chatMessageForm
-# Create your views here.
+
 
 User = get_user_model()
 
 @csrf_exempt
 def signup(request):
     if request.method == 'POST':
-        # Handle the signup logic here
+        # Handle the signup logic 
         username = request.POST.get('username')
         password1 = request.POST.get('password1')
         password2 = request.POST.get('password2')
@@ -48,36 +47,21 @@ def signup(request):
         if User.objects.filter(email=email).exists():
             return HttpResponse("Email already exists!")
         
-        # Zeruh email verification API
-        api_key = "268eb7defd4c6f3ab1383296fffd3122ad31ada8719aa275ab8a2f337e2868d7"
-        url = f"https://api.zeruh.com/v1/verify?api_key={api_key}&email_address={email}"
-        
-        try:
-            response = requests.get(url)
-            data = response.json()
+        email_verification = verify_mail(email)
+        if email_verification == True:
+            user = User.objects.create_user(username=username, password=password1, email=email)
             
-            if response.status_code == 200 and data.get('success') == True:
-                verification_result = data.get('result', {})
-                if verification_result.get('status') == 'deliverable':
-                    print("Email is valid")
-
-                    user = User.objects.create_user(username=username, password=password1, email=email)
-                    
-                    send_register_mail(email, username)
-                    return redirect('login')  # Redirect to the login page after signup
-                else:
-                    print("Email is not deliverable")
-                    return render(request, 'signup.html', {'error': 'Email does not exist'})
-                    
-        except Exception as e:
-            print(f"Error verifying email: {e}")
-            return render(request, 'signup.html', {'error': e})
+            send_register_mail(email, username)
+            return redirect('login')  # Redirect to the login page after signup
+        else:
+            print("Email is not deliverable")
+            return render(request, 'signup.html', {'error': 'Email does not exist'})
                     
     return render(request, 'signup.html')
 
 def login_view(request):
     if request.method == 'POST':
-        # Handle the login logic here
+        # Handle the login logic 
         username = request.POST.get('username')
         password = request.POST.get('password')
         
@@ -95,8 +79,8 @@ def login_view(request):
             except Exception as e:
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})
-            # Redirect to the dashboard or any other page after successful login
-            return redirect('otp_verify')  # Redirect to the OTP verification page
+            # Redirect to the OTP verification page 
+            return redirect('otp_verify')  
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
@@ -105,7 +89,7 @@ def login_view(request):
 
 def otp_verify(request):
     if request.method == 'POST':
-        # Handle the OTP verification logic here
+        # Handle the OTP verification logic 
         entered_otp = ''.join([request.POST.get(str(i), '') for i in range(6)])
         
         actual_otp = request.session.get('otp')
@@ -139,19 +123,21 @@ def otp_verify(request):
 def dashboard(request):
     if request.user.is_authenticated == True:
        print("hello from dashboard")
+       return render(request, 'chat/base.html')
     else:
         print("User is not authenticated")
-
-    return render(request, 'chat/base.html')
-
+        return redirect('login')  # Redirect to the login page if not authenticated
+    
+@login_required   
 def profile_view(request):
-    return render(request, 'chat/profile.html')
+    if request.user.is_authenticated:
+        return render(request, 'chat/profile.html')
 
 @login_required
 def create_group_view(request):
     if request.user.is_authenticated == True:
         if request.method == 'POST':
-            # Handle the group creation logic here
+            # Handle the group creation logic 
             group_name = request.POST.get('group_name', '').strip()
             group_key = request.POST.get('group_key', '').strip()
             
@@ -172,13 +158,15 @@ def create_group_view(request):
                 print("Failed to create group")
                 return render(request, 'chat/create_group.html', {'error': 'Failed to create group'})
             
-    return render(request, 'chat/create_group.html')
+        return render(request, 'chat/create_group.html')
+    else:
+        return redirect('login')
 
 @login_required
 def join_group_view(request):
     if request.user.is_authenticated == True:
         if request.method == 'POST':
-            # Handle the group joining logic here
+            # Handle the group joining logic 
             group_key = request.POST.get('groupKey', '').strip()
             group_name = request.POST.get('groupName', '').strip()
             
@@ -203,7 +191,9 @@ def join_group_view(request):
                 
                 
                 return redirect('chat')
-    return render(request, 'chat/join_group.html')
+        return render(request, 'chat/join_group.html')
+    else:
+        return redirect('login')
 
 @login_required
 def chat_view(request, chat_room_name="Public"):
@@ -231,8 +221,11 @@ def chat_view(request, chat_room_name="Public"):
             'chat_room_name': chat_room_name,
             'form': form,   
         }
-    return render(request, 'chat/chat.html', context)
+        return render(request, 'chat/chat.html', context)
+    else:
+        return redirect('login')
 
+@login_required
 def logout_view(request):
     if request.user.is_authenticated:
         # Handle the logout logic here

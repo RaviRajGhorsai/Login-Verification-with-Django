@@ -1,4 +1,14 @@
 import smtplib, ssl
+import os
+import environ
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+env = environ.Env(
+    DEBUG=(bool, False)
+)
+environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
+
 
 def send_register_mail(receiver_mail, username):
     
@@ -6,7 +16,7 @@ def send_register_mail(receiver_mail, username):
     smtp_server = "smtp.gmail.com"
     sender_email = "testappdjango37@gmail.com"
     receiver_email = receiver_mail
-    password = "thki rglo oqgr koee "
+    password = env('EMAIL_PASSWORD')
     message = f"Welcome {username},\n\nThank you for registering with us. We are excited to have you on board!\n\nBest regards!"
     create_context = ssl.create_default_context()
 
@@ -21,7 +31,7 @@ def send_otp_mail(receiver_mail, otp):
     smtp_server = "smtp.gmail.com"
     sender_email = "testappdjango37@gmail.com"
     receiver_email = receiver_mail
-    password = "thki rglo oqgr koee "
+    password = env('EMAIL_PASSWORD')
     message = f"Your OTP is {otp}.\n\nPlease use this OTP to complete your registration.\n\OTP expires in 5 minutes.\n\n Please do not share this OTP with anyone."
     create_context = ssl.create_default_context()
 
