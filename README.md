@@ -53,3 +53,7 @@ This project is a user authentication system that includes signup, email verific
         'NAME': BASE_DIR / 'db.sqlite3',
         }
       }
+
+## Update
+
+This repository has been updated to real time chat room using websocket. Also using the Signin and Signup function.
