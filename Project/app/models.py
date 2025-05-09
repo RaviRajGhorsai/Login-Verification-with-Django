@@ -11,6 +11,7 @@ class User(AbstractUser):
 class Group(models.Model):
     name = models.CharField(max_length=100)
     key = models.CharField(max_length=100, unique=True)
+    online_users = models.ManyToManyField(User, related_name='online_count', blank=True)
     members = models.ManyToManyField(User, related_name='members')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

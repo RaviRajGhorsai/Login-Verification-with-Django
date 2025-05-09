@@ -1,6 +1,6 @@
 from channels.generic.websocket import WebsocketConsumer
 from django.shortcuts import get_object_or_404
-from .models import Group, GroupMessage
+from .models import Group, GroupMessage, User
 from django.template.loader import render_to_string
 from asgiref.sync import async_to_sync
 import json
@@ -14,10 +14,15 @@ class ChatConsumer(WebsocketConsumer):
         # converts asynchronous function to synchronous, so that all user can 
         # receive message at once in real time
         
+            
         async_to_sync(self.channel_layer.group_add)(
             self.group_name,
             self.channel_name
         )
+        
+        if self.user not in self.chat_room.online_users.all():
+            self.chat_room.online_users.add(self.user)
+            self.update_online_count()
         
         self.accept()
     
@@ -25,6 +30,10 @@ class ChatConsumer(WebsocketConsumer):
     def disconnect(self, close_code):
         async_to_sync(self.channel_layer.group_discard)(
             self.group_name, self.channel_name)
+        
+        if self.user in self.chat_room.online_users.all():
+            self.chat_room.online_users.remove(self.user)
+            self.update_online_count()
     
     def receive(self, text_data):
         
@@ -67,4 +76,30 @@ class ChatConsumer(WebsocketConsumer):
         }
         html = render_to_string('chat/partials/chat_message_p.html', context=context)
         
+        self.send(text_data=html)
+        
+    def update_online_count(self):
+        online_count = self.chat_room.online_users.count() -1
+        event = {
+            'type': 'online_count_handler',
+            'online_count': online_count,
+        }
+        
+        async_to_sync(self.channel_layer.group_send)(
+            self.group_name, event
+        )
+    
+    def online_count_handler(self, event):
+        online_count = event['online_count']
+        
+        # chat_messages = GroupMessage.objects.filter(group=self.chat_room).order_by('-created')[:30]
+        # user_ids = set([message.user.id for message in chat_messages])
+        # users = User.objects.filter(id__in=user_ids)
+        
+        # context = {
+        #     'online_count': online_count,
+        #     'chat_messages': chat_messages,
+        #     'users': users,
+        # }
+        html = render_to_string('chat/partials/online_count.html', {'online_count': online_count})
         self.send(text_data=html)
