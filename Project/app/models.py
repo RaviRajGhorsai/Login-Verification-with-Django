@@ -7,6 +7,10 @@ import shortuuid
 class User(AbstractUser):
     # Add any additional fields you want to the user model here
     email = models.EmailField(unique=True)
+
+class Profile(models.Model):
+    user = models.ManyToManyField(User)
+    image = models.ImageField(upload_to='uploads/', blank=True)
     
 class Group(models.Model):
     name = models.CharField(max_length=100, default=shortuuid.uuid, unique=True)
