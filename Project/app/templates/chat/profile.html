@@ -6,11 +6,20 @@
 <main class="flex-grow flex items-center justify-center">
     <div class="text-center">
       <img 
-        src="{% static 'images/IMG-20250118-WA0150.jpg' %}" 
+        src="{% static 'images/Ravi.jpg' %}" 
         alt="Profile Image" 
         class="w-48 h-48 rounded-full object-cover border-4 border-blue-500 shadow-lg"
       />
+      
+      <h2 class="mt-4 text-xl font-semibold text-gray-800">{{ username }}</h2>
+      {% if request.user.username != username %}
+      <a href="{% url 'start-chat' username %}" class="mt-4 inline-block text-xl font-semibold text-white bg-blue-600 px-4 py-2 rounded hover:bg-blue-700 transition">
+      Chat with me
+      </a>
+      {% endif %}
     </div>
   </main>
+
+
 
  {% endblock %}

@@ -1,15 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.contrib.auth import get_user_model, authenticate, logout, login
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib import messages
-import requests
-import secrets
 from datetime import datetime, timedelta
 import hashlib
+import secrets
 from utils import send_register_mail, send_otp_mail, verify_mail
 from .models import Group, GroupMessage
 from .forms import chatMessageForm
@@ -67,7 +66,8 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            
+            login(request, user)
+            request.session['otp_verified'] = True
             otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
             request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
             request.session['user_id'] = user.id
@@ -79,7 +79,7 @@ def login_view(request):
                 print(f"Error sending email: {e}")
                 return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the OTP verification page 
-            return redirect('otp_verify')  
+            return redirect('dashboard')  
         else:
             print("invalid credentials")
             return render(request, 'login.html', {'error': 'Invalid username or password'})
@@ -126,17 +126,19 @@ def dashboard(request):
     if request.user.is_authenticated == True:
         if request.session.get('otp_verified') == True:
             print("hello from dashboard")
-            return render(request, 'chat/base.html')
+            return render(request, 'chat/home.html', {'user': request.user})
         else:
             print("User is not authenticated")
             
             return redirect('login')  # Redirect to the login page if not authenticated
     
 @login_required   
-def profile_view(request):
+def profile_view(request, username):
     if request.user.is_authenticated:
         if request.session.get('otp_verified') == True:
-            return render(request, 'chat/profile.html')
+             return render(request, 'chat/profile.html', {'username': username})
+            
+                
 
 @login_required
 def create_group_view(request):
@@ -205,12 +207,22 @@ def join_group_view(request):
             return redirect('login')
 
 @login_required
-def chat_view(request, chat_room_name="Public"):
+def chat_view(request, chatroom_name="Public"):
     if request.user.is_authenticated == True:
         if request.session.get('otp_verified') == True:
-            chat_group = get_object_or_404(Group, name=chat_room_name)
+            chat_group = get_object_or_404(Group, name=chatroom_name)
             chat_messages = chat_group.messages.order_by('-created')[:30][::-1]
             form = chatMessageForm()
+            
+            other_user = None
+            if chat_group.is_private:
+                if request.user not in chat_group.members.all():
+                    raise Http404()
+                
+                for member in chat_group.members.all():
+                    if member != request.user:
+                        other_user = member
+                        break
             
             if request.htmx:
                 form = chatMessageForm(request.POST)
@@ -224,22 +236,49 @@ def chat_view(request, chat_room_name="Public"):
                         'user': request.user,
                     }
                     return render(request, 'chat/partials/chat_message_p.html', context)
-            
+            chat_groups = Group.objects.filter(members=request.user)
             context = {
                 'chat_groups': chat_group,
                 'chat_messages': chat_messages,
-                'chat_room_name': chat_room_name,
-                'form': form,   
+                'chat_room_name': chatroom_name,
+                'form': form,
+                'other_user': other_user,
+                'chat_groups_all': chat_groups
+                
+                
             }
             return render(request, 'chat/chat.html', context)
         else:
             
             return redirect('login')
 
+def get_or_create_chat(request, username):
+    if request.user.username == username:
+        redirect('dashboard')
+    else:
+        other_user = User.objects.get(username=username)
+        my_chat_rooms = request.user.members.filter(is_private=True)
+        
+        if my_chat_rooms.exists():
+            for chatroom in my_chat_rooms:
+                if other_user in chatroom.members.all():
+                    chatroom = chatroom
+                    break
+                else:
+                    chatroom = Group.objects.create(is_private=True)
+                    chatroom.members.add(other_user, request.user)
+        else:
+            chatroom = Group.objects.create(is_private=True)
+            chatroom.members.add(other_user, request.user)
+
+        return redirect('chatroom', chatroom.name)
+                    
+
 @login_required
 def logout_view(request):
     if request.user.is_authenticated:
-        # Handle the logout logic here
+        
         logout(request)
+        request.session.delete()
         return redirect('login')  # Redirect to the login page after logout
     return redirect('login')  # Redirect to the login page if not authenticated

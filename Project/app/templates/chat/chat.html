@@ -1,12 +1,25 @@
 {% extends "chat/base.html" %}
 {% block chatbox %}
+{% load static %}
 <div ws-receive></div>
 <div class="max-w-md mx-auto mt-10 bg-white shadow-lg rounded-xl flex flex-col h-[500px]">
     
     <div class="bg-blue-600 text-white px-4 py-3 rounded-t-xl flex justify-between items-center">
+      {% if other_user %}
+      <div id="online-icon"></div>
+      <div class="flex flex-col items-center mx-auto">
+        <img 
+        src="{% static 'images/Ravi.jpg' %}" 
+        alt="Profile Image" 
+        class="w-10 h-10 mr-3 -mt-1 rounded-full object-cover border-4 border-blue-500 shadow-lg"
+      />
+      <div class="text-lg font-semibold  ml-20 -mt-9">@{{ other_user.username }}</div>
+      </div>
+      {% else %}
       <h2 class="text-lg font-semibold">{{ chat_room_name }}</h2>
       <div id="online-icon"></div>
       <span id="online-count" class="text-sm font-light"></span>
+      {% endif %}
     </div>
   
     <!-- Chat Messages -->
