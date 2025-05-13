@@ -12,5 +12,6 @@ urlpatterns = [
     path('chat/', views.chat_view, name='joinChat'),
     path('profile/<str:username>', views.profile_view, name='profile'),
     path('chat/<username>', views.get_or_create_chat, name='start-chat'),
-    path('chat/room/<chatroom_name>', views.chat_view, name="chatroom")
+    path('chat/room/<chatroom_name>', views.chat_view, name="chatroom"),
+    path('upload-img/', views.upload_img, name='profile-img'),
 ]

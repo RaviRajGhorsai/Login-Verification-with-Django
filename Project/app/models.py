@@ -9,7 +9,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
 
 class Profile(models.Model):
-    user = models.ManyToManyField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to='uploads/', blank=True)
     
 class Group(models.Model):

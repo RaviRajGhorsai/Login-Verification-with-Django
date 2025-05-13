@@ -11,7 +11,7 @@ import hashlib
 import secrets
 from utils import send_register_mail, send_otp_mail, verify_mail
 from .models import Group, GroupMessage, Profile
-from .forms import chatMessageForm
+from .forms import chatMessageForm, ProfileImage
 from django.db.models import Count, Q
 from django.db import IntegrityError
 
@@ -68,8 +68,8 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         
         if user is not None:
-            
-            request.session['otp_verified'] = True
+            # login(request, user)
+            # request.session['otp_verified'] = True
             otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
             request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
             request.session['user_id'] = user.id
@@ -134,14 +134,26 @@ def dashboard(request):
 def profile_view(request, username):
     if request.user.is_authenticated:
         if request.session.get('otp_verified') == True:
-            profile = Profile.objects.filter(user=request.user)
+            user = User.objects.get(username=username)
+            profile = Profile.objects.filter(user=user).first()
             context = {
                 'username': username,
                 'profile': profile
             }
             return render(request, 'chat/profile.html', context)
             
-                
+def upload_img(request):
+    if request.method =="POST":
+        img = request.FILES.get("image")
+        if img:
+            profile, created = Profile.objects.get_or_create(user=request.user)
+            profile.image = img
+            profile.save()
+            print("upload success")
+            return redirect('dashboard')
+        else:
+            print("upload img unsuccess")
+    return render(request, 'chat/upload.html')
 
 @login_required
 def create_group_view(request):
@@ -208,6 +220,7 @@ def join_group_view(request):
 def chat_view(request, chatroom_name="Public"):
     if request.user.is_authenticated == True:
         if request.session.get('otp_verified') == True:
+            
             chat_group = get_object_or_404(Group, name=chatroom_name)
             chat_messages = chat_group.messages.order_by('-created')[:30][::-1]
             form = chatMessageForm()
@@ -220,28 +233,32 @@ def chat_view(request, chatroom_name="Public"):
                 for member in chat_group.members.all():
                     if member != request.user:
                         other_user = member
+                        profile = Profile.objects.get(user__username = other_user.username)
                         break
-            
+
             if request.htmx:
                 form = chatMessageForm(request.POST)
                 if form.is_valid():
+                    
                     message = form.save(commit=False)
                     message.user = request.user
                     message.group = chat_group
                     message.save()
                     context = {
                         'message': message,
-                        'user': request.user,
+                        'user': request.user,  
                     }
                     return render(request, 'chat/partials/chat_message_p.html', context)
             chat_groups = Group.objects.filter(members=request.user)
             context = {
-                'chat_groups': chat_group,
+                'chat_group': chat_group,
                 'chat_messages': chat_messages,
                 'chat_room_name': chatroom_name,
                 'form': form,
                 'other_user': other_user,
-                'chat_groups_all': chat_groups 
+                'chat_groups_all': chat_groups,
+                'profile': profile,
+                
             }
             return render(request, 'chat/chat.html', context)
         else:
