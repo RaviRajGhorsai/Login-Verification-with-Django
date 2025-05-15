@@ -1,6 +1,6 @@
 from channels.generic.websocket import WebsocketConsumer
 from django.shortcuts import get_object_or_404
-from .models import Group, GroupMessage, User
+from .models import Group, GroupMessage, User, Profile
 from django.template.loader import render_to_string
 from asgiref.sync import async_to_sync
 import json
@@ -13,8 +13,6 @@ class ChatConsumer(WebsocketConsumer):
         
         # converts asynchronous function to synchronous, so that all user can 
         # receive message at once in real time
-        
-            
         async_to_sync(self.channel_layer.group_add)(
             self.group_name,
             self.channel_name
@@ -68,11 +66,16 @@ class ChatConsumer(WebsocketConsumer):
         )
     
     def message_handler(self, event):
+        
         message_id = event['message_id']
         group_message = get_object_or_404(GroupMessage, id=message_id)
+        sender = group_message.user
+        
+        sender_profile = Profile.objects.get(user=sender)
         context ={
             'message': group_message,
             'user': self.user,
+            'sender_profile': sender_profile
         }
         html = render_to_string('chat/partials/chat_message_p.html', context=context)
         
@@ -91,15 +94,6 @@ class ChatConsumer(WebsocketConsumer):
     
     def online_count_handler(self, event):
         online_count = event['online_count']
-        
-        # chat_messages = GroupMessage.objects.filter(group=self.chat_room).order_by('-created')[:30]
-        # user_ids = set([message.user.id for message in chat_messages])
-        # users = User.objects.filter(id__in=user_ids)
-        
-        # context = {
-        #     'online_count': online_count,
-        #     'chat_messages': chat_messages,
-        #     'users': users,
-        # }
+      
         html = render_to_string('chat/partials/online_count.html', {'online_count': online_count})
         self.send(text_data=html)

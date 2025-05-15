@@ -11,7 +11,7 @@ import hashlib
 import secrets
 from utils import send_register_mail, send_otp_mail, verify_mail
 from .models import Group, GroupMessage, Profile
-from .forms import chatMessageForm, ProfileImage
+from .forms import chatMessageForm
 from django.db.models import Count, Q
 from django.db import IntegrityError
 
@@ -50,7 +50,8 @@ def signup(request):
         email_verification = verify_mail(email)
         if email_verification == True:
             user = User.objects.create_user(username=username, password=password1, email=email)
-            
+            group = Group.objects.get(name="Public")
+            group.members.add(user)
             send_register_mail(email, username)
             return redirect('login')  # Redirect to the login page after signup
         else:
@@ -95,6 +96,7 @@ def otp_verify(request):
         
         actual_otp = request.session.get('otp')
         entered_otp_hash = hashlib.sha256(entered_otp.encode()).hexdigest()
+        
         user_id = request.session.get('user_id')
         
         if not actual_otp or not user_id:
@@ -113,6 +115,8 @@ def otp_verify(request):
                 request.session.pop('otp-created-at', None)
                 request.session.delete()
                 
+                
+                
                 login(request, user)
                 request.session['otp_verified'] = True
                 return redirect('dashboard')
@@ -125,6 +129,7 @@ def dashboard(request):
     if request.user.is_authenticated == True:
         if request.session.get('otp_verified') == True:
             print("hello from dashboard")
+            
             return render(request, 'chat/home.html', {'user': request.user})
         else:
             print("User is not authenticated")
@@ -156,67 +161,6 @@ def upload_img(request):
     return render(request, 'chat/upload.html')
 
 @login_required
-def create_group_view(request):
-    if request.user.is_authenticated == True:
-        if request.session.get('otp_verified') == True:
-            if request.method == 'POST':
-                # Handle the group creation logic 
-                group_name = request.POST.get('group_name', '').strip()
-                group_key = request.POST.get('group_key', '').strip()
-                
-                if not group_name or not group_key:
-                    print("All fields are required")
-                    return render(request, 'chat/create_group.html', {'error': 'All fields are required'})
-                
-                if Group.objects.filter(name=group_name).exists():
-                    print("Group name already exists")
-                    return render(request, 'chat/create_group.html', {'error': 'Group name already exists'})
-                
-                group = Group.objects.create(name=group_name, key=group_key)
-                group.members.add(request.user)
-                group.save()
-                if group:
-                    return redirect('chat')
-                else:
-                    print("Failed to create group")
-                    return render(request, 'chat/create_group.html', {'error': 'Failed to create group'})
-            return render(request, 'chat/create_group.html')
-        else:
-            return redirect('login')
-
-@login_required
-def join_group_view(request):
-    if request.user.is_authenticated == True:
-        if request.session.get('otp_verified') == True:
-            if request.method == 'POST':
-                # Handle the group joining logic 
-                group_key = request.POST.get('groupKey', '').strip()
-                group_name = request.POST.get('groupName', '').strip()
-                
-                if not group_key or not group_name:
-                    print("Group key is required")
-                    return render(request, 'chat/join_group.html', {'error': 'Group name and key is required'})
-        
-                try:
-                    group = Group.objects.get(name= group_name, key=group_key)
-                except Group.DoesNotExist:
-                    print("Group does not exist")
-                    return render(request, 'chat/join_group.html', {'error': 'Group does not exist'})
-                
-                if request.user not in group.members.all():
-                    group.members.add(request.user)
-                    group.save()
-                    messages.success(request, f"You have successfully joined the group {group.name}.")
-                    print(f"You have successfully joined the group {group.name}.")
-                    return redirect('chat')
-                else:
-                    print("You are already a member of this group")
-                    return redirect('chat')
-            return render(request, 'chat/join_group.html')
-        else:
-            return redirect('login')
-
-@login_required
 def chat_view(request, chatroom_name="Public"):
     if request.user.is_authenticated == True:
         if request.session.get('otp_verified') == True:
@@ -224,18 +168,11 @@ def chat_view(request, chatroom_name="Public"):
             chat_group = get_object_or_404(Group, name=chatroom_name)
             chat_messages = chat_group.messages.order_by('-created')[:30][::-1]
             form = chatMessageForm()
+        
+            other_user = chat_group.members.exclude(id=request.user.id)
+            profile = Profile.objects.filter(user__in=other_user)
             
-            other_user = None
-            if chat_group.is_private:
-                if request.user not in chat_group.members.all():
-                    raise Http404()
-                
-                for member in chat_group.members.all():
-                    if member != request.user:
-                        other_user = member
-                        profile = Profile.objects.get(user__username = other_user.username)
-                        break
-
+            
             if request.htmx:
                 form = chatMessageForm(request.POST)
                 if form.is_valid():
@@ -244,10 +181,14 @@ def chat_view(request, chatroom_name="Public"):
                     message.user = request.user
                     message.group = chat_group
                     message.save()
+                    sender_profile = Profile.objects.filter(user=message.user).first()
                     context = {
                         'message': message,
-                        'user': request.user,  
+                        'user': request.user,
+                        'other_user': other_user, 
+                        'sender_profile': sender_profile, 
                     }
+                    
                     return render(request, 'chat/partials/chat_message_p.html', context)
             chat_groups = Group.objects.filter(members=request.user)
             context = {
@@ -257,8 +198,7 @@ def chat_view(request, chatroom_name="Public"):
                 'form': form,
                 'other_user': other_user,
                 'chat_groups_all': chat_groups,
-                'profile': profile,
-                
+                'profile': profile,  
             }
             return render(request, 'chat/chat.html', context)
         else:
@@ -289,5 +229,68 @@ def logout_view(request):
         
         logout(request)
         request.session.delete()
-        return redirect('login')  # Redirect to the login page after logout
-    return redirect('login')  # Redirect to the login page if not authenticated
+        return redirect('login')  
+    return redirect('login')  
+
+
+
+#@login_required
+# def create_group_view(request):
+#     if request.user.is_authenticated == True:
+#         if request.session.get('otp_verified') == True:
+#             if request.method == 'POST':
+#                 # Handle the group creation logic 
+#                 group_name = request.POST.get('group_name', '').strip()
+#                 group_key = request.POST.get('group_key', '').strip()
+                
+#                 if not group_name or not group_key:
+#                     print("All fields are required")
+#                     return render(request, 'chat/create_group.html', {'error': 'All fields are required'})
+                
+#                 if Group.objects.filter(name=group_name).exists():
+#                     print("Group name already exists")
+#                     return render(request, 'chat/create_group.html', {'error': 'Group name already exists'})
+                
+#                 group = Group.objects.create(name=group_name, key=group_key)
+#                 group.members.add(request.user)
+#                 group.save()
+#                 if group:
+#                     return redirect('chat')
+#                 else:
+#                     print("Failed to create group")
+#                     return render(request, 'chat/create_group.html', {'error': 'Failed to create group'})
+#             return render(request, 'chat/create_group.html')
+#         else:
+#             return redirect('login')
+
+# @login_required
+# def join_group_view(request):
+#     if request.user.is_authenticated == True:
+#         if request.session.get('otp_verified') == True:
+#             if request.method == 'POST':
+#                 # Handle the group joining logic 
+#                 group_key = request.POST.get('groupKey', '').strip()
+#                 group_name = request.POST.get('groupName', '').strip()
+                
+#                 if not group_key or not group_name:
+#                     print("Group key is required")
+#                     return render(request, 'chat/join_group.html', {'error': 'Group name and key is required'})
+        
+#                 try:
+#                     group = Group.objects.get(name= group_name, key=group_key)
+#                 except Group.DoesNotExist:
+#                     print("Group does not exist")
+#                     return render(request, 'chat/join_group.html', {'error': 'Group does not exist'})
+                
+#                 if request.user not in group.members.all():
+#                     group.members.add(request.user)
+#                     group.save()
+#                     messages.success(request, f"You have successfully joined the group {group.name}.")
+#                     print(f"You have successfully joined the group {group.name}.")
+#                     return redirect('chat')
+#                 else:
+#                     print("You are already a member of this group")
+#                     return redirect('chat')
+#             return render(request, 'chat/join_group.html')
+#         else:
+#             return redirect('login')

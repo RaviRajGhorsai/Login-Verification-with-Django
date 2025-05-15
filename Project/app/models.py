@@ -12,6 +12,9 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
     image = models.ImageField(upload_to='uploads/', blank=True)
     
+    def __str__(self):
+        return self.user.username
+    
 class Group(models.Model):
     name = models.CharField(max_length=100, default=shortuuid.uuid, unique=True)
     
