@@ -18,6 +18,9 @@ from django.db import IntegrityError
 
 User = get_user_model()
 
+def home_view(request):
+    return render(request, 'dashboard.html')
+
 @csrf_exempt
 def signup(request):
     if request.method == 'POST':
