@@ -86,16 +86,16 @@ def login_view(request):
         if user is not None:
             login(request, user)
             request.session['otp_verified'] = True
-            # otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
-            # request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
-            # request.session['user_id'] = user.id
-            # request.session['otp-created-at'] = datetime.now().isoformat()
+            otp = ''.join(str(secrets.randbelow(10)) for _ in range(6))
+            request.session['otp'] = hashlib.sha256(otp.encode()).hexdigest()
+            request.session['user_id'] = user.id
+            request.session['otp-created-at'] = datetime.now().isoformat()
             
-            # try:
-            #     send_otp_mail(user.email, otp)
-            # except Exception as e:
-            #     print(f"Error sending email: {e}")
-            #     return render(request, 'login.html', {'error': 'Failed to send OTP email'})
+            try:
+                send_otp_mail(user.email, otp)
+            except Exception as e:
+                print(f"Error sending email: {e}")
+                return render(request, 'login.html', {'error': 'Failed to send OTP email'})
             # Redirect to the OTP verification page 
             return redirect('app:dashboard')  
         else:
