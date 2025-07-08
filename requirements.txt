@@ -19,6 +19,7 @@ incremental==24.7.2
 mysqlclient==2.2.7
 pillow==11.2.1
 pyasn1==0.6.1
+psycopg==3.2.9
 pyasn1_modules==0.4.2
 pycparser==2.22
 PyMySQL==1.1.1

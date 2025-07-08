@@ -14,6 +14,8 @@ from pathlib import Path
 import os
 import environ
 
+from django.conf import settings
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -26,13 +28,13 @@ environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-t54f4!-w2d_cblnv047*10nwhe6o8s&g3p-)oic_$(8zafdg)0'
+SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG', default=False)
 
-ALLOWED_HOSTS = []
-
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'real-time-chat-app-06zl.onrender.com']
+CSRF_TRUSTED_ORIGINS = ['https://real-time-chat-app-06zl.onrender.com']
 
 # Application definition
 
@@ -45,8 +47,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'app',
-    
+    'newsfeed',
+    'cloudinary',
+    'cloudinary_storage',
     'django_htmx',
+    'whitenoise.runserver_nostatic',
+    
 ]
 
 MIDDLEWARE = [
@@ -58,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'Project.urls'
@@ -65,7 +72,7 @@ ROOT_URLCONF = 'Project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -89,17 +96,25 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': env('ENGINE'),
-        'NAME': env('NAME'),
-        'USER': env('USER'),
-        'PASSWORD': env('PASSWORD'),
-        'HOST': env('HOST'),    
-        'PORT': env('PORT'),
-    }
-}
+ENVIRONMENT = env('ENVIRONMENT', default='development')
+ENVIRONMENT = 'development'
 
+if ENVIRONMENT == 'development':
+    DATABASES = {
+        'default': {
+            'ENGINE': env('ENGINE'),
+            'NAME': env('NAME'),
+            'USER': env('USER'),
+            'PASSWORD': env('PASSWORD'),
+            'HOST': env('HOST'),    
+            'PORT': env('PORT'),
+        }
+    }
+else:
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.parse(env('DATABASE_URL'))
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -135,11 +150,18 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
-
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = '/media/'
 
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': 'digxfmeok',
+    'API_KEY': '732558375459394',
+    'API_SECRET': env('API_SECRET')
+}
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
